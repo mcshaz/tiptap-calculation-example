@@ -43,7 +43,9 @@ onMounted(() => {
       StarterKit,
       Calculation.configure({
         onClick: getFormula,
-        shortcut: '{'
+        HTMLAttributes: {
+          'class': 'inline-calculation'
+        }
       }),
     ],
     content: props.modelValue,
@@ -71,7 +73,7 @@ onBeforeUnmount(() => {
         B
       </strong>
     </button>
-    <button @click="getFormula()" title="insert calculation (or press '{' key in editor)">
+    <button @click="getFormula()" title="insert calculation (or press Control+Shift+{ keys in editor)">
       <i class="inline-calculation">
         f(x)
       </i>

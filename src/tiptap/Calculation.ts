@@ -2,17 +2,24 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import { ClickNodeHandler } from './helpers/ClickNodeHandler';
 import type { Plugin } from '@tiptap/pm/state';
 import { SingleCommands } from '@tiptap/vue-3';
-// import { PluginKey } from '@tiptap/pm/state'
 
 export interface CalculationsOptions {
   formula: string;
   HTMLAttributes: Record<string, any>
-  /** [default] 'f(x)' */
+  /** the text to display inline in place of the formula. [default] f(x) */
   display: string;
-  shortcut?: string;
+  /** the keyboard shortcut which will execute the onClick function (if provided)
+   * (with an empty string argument)
+   * [default] Control-Shift-{
+   */
+  keyboardShortcut: string;
+  /** the function to execute when a calculation is clicked.
+   * the argument passed will be the formula belonging to the clicked node
+   * the function should return whether the operation was successful (usually the result of run())
+   */
   onClick?: (formula: string) => boolean
 }
-// export const CalculationPluginKey = new PluginKey('calculation')
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     calculation: {
@@ -45,6 +52,7 @@ export const Calculation = Node.create<CalculationsOptions>({
       formula: '',
       display: 'f(x)',
       HTMLAttributes: {},
+      keyboardShortcut: 'Control-Shift-{',
     }
   },
 
@@ -104,7 +112,7 @@ export const Calculation = Node.create<CalculationsOptions>({
   renderHTML({ HTMLAttributes }) {
     return [
       'output',
-      mergeAttributes({ [elAttr]: this.options.formula, 'class': 'inline-calculation' }, this.options.HTMLAttributes, HTMLAttributes),
+      mergeAttributes({ [elAttr]: this.options.formula }, this.options.HTMLAttributes, HTMLAttributes),
       this.options.display,
     ]
   },
@@ -135,8 +143,8 @@ export const Calculation = Node.create<CalculationsOptions>({
     const returnVar: { [key: string]: () => boolean } = {
       Backspace: () => deleteAtom(this.editor.commands),
     }
-    if (this.options.shortcut && this.options.onClick) {
-      returnVar[this.options.shortcut] = () => this.options.onClick!('')
+    if (this.options.onClick) {
+      returnVar[this.options.keyboardShortcut] = () => this.options.onClick!('')
     }
     return returnVar
   },

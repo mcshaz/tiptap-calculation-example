@@ -2,8 +2,8 @@
 import {computed, ref} from 'vue'
 import DrugEditor from './components/DrugEditor.vue';
 
-const doseDescription = ref('<p>The dose of parafabulosum for a <output data-formula="[weightKg]" class="inline-calculation"></output> Kg person is <output data-formula="([weightKg]*0.3).toPrecision(2)" class="inline-calculation"></output> mg</p>')
-const weight = ref(20)
+const doseDescription = ref('<p>The dose of parafabulosum for a <output data-formula="[weightKg]" class="inline-calculation"></output> Kg child is <output data-formula="([weightKg]>50?15:([weightKg]*0.3)).toPrecision(2)" class="inline-calculation"></output> mg</p>')
+const weight = ref(40)
 
 const calculatedHTML = computed(() => {
   const template = document.createElement('template')

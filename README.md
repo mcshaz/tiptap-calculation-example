@@ -1,6 +1,6 @@
 # tiptap-calculation-example
-This is a simple prototype written to meet the following requirements:
-- simple WYSIWYG editing of text - explaining a result, inline with the result of a calculation
+This is a simple proof of concept written to meet the following requirements:
+- simple WYSIWYG editing of text, explaining a result, inline with the result of a calculation
 - ability to add, edit and delete simple formulas, the result of which which will be calculated once the variables are known
 - display the underlying formula creating the displayed result on hover
 - a narrow immutable symbol used inline to represent the formula. This is because: 
