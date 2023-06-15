@@ -7,9 +7,13 @@ export interface CalculationsOptions {
   formula: string;
   HTMLAttributes: Record<string, any>
   /** the text to display inline in place of the formula. [default] f(x) */
-  display: string;
+  displayText: string;
+  /** include the formula as a title attribute, so that browsers display a native 'tooltip'
+   * [default] true
+   */
+  hasTitleAttribute: boolean;
   /** the keyboard shortcut which will execute the onClick function (if provided)
-   * (with an empty string argument)
+   * with an empty string argument
    * [default] Control-Shift-{
    */
   keyboardShortcut: string;
@@ -50,8 +54,9 @@ export const Calculation = Node.create<CalculationsOptions>({
   addOptions() {
     return {
       formula: '',
-      display: 'f(x)',
+      displayText: 'f(x)',
       HTMLAttributes: {},
+      hasTitleAttribute: true,
       keyboardShortcut: 'Control-Shift-{',
     }
   },
@@ -89,7 +94,7 @@ export const Calculation = Node.create<CalculationsOptions>({
       title: {
         default: null,
         renderHTML: attributes => {
-          if (!attributes[pmAttr]) {
+          if (!this.options.hasTitleAttribute || !attributes[pmAttr]) {
             return {}
           }
 
@@ -113,7 +118,7 @@ export const Calculation = Node.create<CalculationsOptions>({
     return [
       'output',
       mergeAttributes({ [elAttr]: this.options.formula }, this.options.HTMLAttributes, HTMLAttributes),
-      this.options.display,
+      this.options.displayText,
     ]
   },
 
