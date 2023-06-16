@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
 
 .inline-calculation {
   display:inline-block;
-  background-color: bisque;
+  background-color: #f0f0f0;
   font-weight: bold;
 	line-height: 1;
 	white-space: nowrap;
