@@ -2,7 +2,7 @@
 import {computed, ref} from 'vue'
 import DrugEditor from './components/DrugEditor.vue';
 
-const doseDescription = ref('<p>The dose of parafabulosum for a <output data-formula="[weightKg]" class="inline-calculation"></output> Kg child is <output data-formula="([weightKg]>50?15:([weightKg]*0.3)).toPrecision(2)" class="inline-calculation"></output> mg</p>')
+const doseDescription = ref('<p>The dose of parafabulosum for a <output data-formula="wt" class="inline-calculation"></output> Kg child is <output data-formula="wt>50?15:(wt*0.3)" data-rounding="p2" class="inline-calculation"></output> mg</p>')
 const weight = ref(40)
 
 const calculatedHTML = computed(() => {
@@ -11,15 +11,34 @@ const calculatedHTML = computed(() => {
   for (const o of template.content.querySelectorAll<HTMLOutputElement>('output[data-formula]')) {
     let formula = o.getAttribute('data-formula')
     if (formula === null) return ''
-    formula = formula?.replaceAll('[weightKg]', weight.value.toString())
+    formula = formula?.replaceAll('w', weight.value.toString())
+    formula = formula.replace(/[^\d.()<>=?:+*/%-]/g, '')
+    let result: Number;
     try {
-      const v = Function(`"use strict";return (${formula});`)();
-      o.value = v as string
+      result = Number(Function(`"use strict";return (${formula});`)())
     }
     catch (e) {
       console.log(e)
       return ''
     }
+    let rounding = o.getAttribute('data-rounding')
+    let rounded: string;
+    if (rounding) {
+      const precision = Number(rounding.substring(1))
+      switch (rounding[0]) {
+        case 'f':
+          rounded = result.toFixed(precision)
+          break
+        case 'p':
+          rounded = result.toPrecision(precision)
+          break
+        default:
+          throw new Error(`unknown rounding expression: '${rounding}'`)
+      }
+    } else {
+      rounded = result.toString();
+    }
+    o.value = rounded
   }
   return template.innerHTML
 })
@@ -30,7 +49,6 @@ const calculatedHTML = computed(() => {
   <h4>Early prototype formula editor</h4>
   <DrugEditor v-model="doseDescription" />
   <hr>
-  <aside>Final code will NOT allow raw user input to execute as javascript - this is a proof of concept which would have serious security risks in production in its current state</aside>
   <label>
     Weight
       <input type="number" v-model.number="weight">

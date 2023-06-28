@@ -1,17 +1,13 @@
-import { getAttributes } from '@tiptap/core'
+import { getAttributes } from '@tiptap/vue-3'
 import { NodeType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 type ClickHandlerOptions = {
   type: NodeType;
   /** HTML element tagname */
-  tag: string;
-  /** ProseMirror attribute name, the value of which is passed to function */
-  PMAttrName: string;
-  /** HTML attribute value to be passed to the function [default] data-[PMAttrName]*/
-  HTMLAttrName?: string;
+  querySelector: string;
   /** Function to be called when the node is clicked */
-  onClick: (attrValue: string) => void
+  onClick: (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) => void
 }
 
 export function ClickNodeHandler(options: ClickHandlerOptions): Plugin {
@@ -23,14 +19,9 @@ export function ClickNodeHandler(options: ClickHandlerOptions): Plugin {
           return false
         }
 
-        const htmlAttrName = options.HTMLAttrName || ('data-' + options.PMAttrName)
-        const el = (event.target as HTMLElement)?.closest(`${options.tag}[${htmlAttrName}]`)
-        const attrs = getAttributes(view.state, options.type.name)
-
-        const attr: string | null | undefined = el?.getAttribute(htmlAttrName) ?? attrs[options.PMAttrName]
-
-        if (typeof attr === 'string') {
-          options.onClick(attr)
+        const el = (event.target as HTMLElement)?.closest(options.querySelector) as HTMLElement | null
+        if (el) {
+          options.onClick(getAttributes(view.state, options.type.name), el.dataset)
           return true
         }
 

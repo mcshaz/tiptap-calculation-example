@@ -1,10 +1,12 @@
-import { Node, mergeAttributes } from '@tiptap/core'
 import { ClickNodeHandler } from './helpers/ClickNodeHandler';
+import { deleteAtom } from './helpers/deleteAtom';
+import { Node, mergeAttributes } from '@tiptap/vue-3';
 import type { Plugin } from '@tiptap/pm/state';
-import { SingleCommands } from '@tiptap/vue-3';
+
 
 export interface CalculationsOptions {
   formula: string;
+  rounding: string;
   HTMLAttributes: Record<string, any>
   /** the text to display inline in place of the formula. [default] f(x) */
   displayText: string;
@@ -21,25 +23,25 @@ export interface CalculationsOptions {
    * the argument passed will be the formula belonging to the clicked node
    * the function should return whether the operation was successful (usually the result of run())
    */
-  onClick?: (formula: string) => boolean
+  onClick?: (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) => boolean
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     calculation: {
-      insertCalculation: (attributes: { formula: string }) => ReturnType;
+      insertCalculation: (attributes: { formula: string, rounding: string }) => ReturnType;
       removeCalculation: () => ReturnType;
     }
   }
 }
 
-const thisNodeName = 'calculation'
-const tag = 'output'
-const pmAttr = 'formula'
-const elAttr = 'data-' + pmAttr
+// const thisNodeName = 'calculation'
+// const tag = 'output'
+// const pmAttr = 'formula'
+// const elAttr = 'data-' + pmAttr
 
 export const Calculation = Node.create<CalculationsOptions>({
-  name: thisNodeName,
+  name: 'calculation',
 
   // key: CalculationPluginKey,
 
@@ -54,6 +56,7 @@ export const Calculation = Node.create<CalculationsOptions>({
   addOptions() {
     return {
       formula: '',
+      rounding: '',
       displayText: 'f(x)',
       HTMLAttributes: {},
       hasTitleAttribute: true,
@@ -63,30 +66,28 @@ export const Calculation = Node.create<CalculationsOptions>({
 
   addAttributes() {
     return {
-      id: {
-        default: null,
-        parseHTML: element => element.getAttribute('data-id'),
+      formula: {
+        default: '',
+        parseHTML: element => element.getAttribute('data-formula'),
         renderHTML: attributes => {
-          if (!attributes.id) {
+          if (!attributes.formula) {
             return {}
           }
-
           return {
-            'data-id': attributes.id,
+            'data-formula': attributes.formula,
           }
         },
       },
 
-      [pmAttr]: {
-        default: '',
-        parseHTML: element => element.getAttribute(elAttr),
+      rounding: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-rounding'),
         renderHTML: attributes => {
-          if (!attributes[pmAttr]) {
+          if (!attributes.rounding) {
             return {}
           }
-
           return {
-            [elAttr]: attributes[pmAttr],
+            'data-rounding': attributes.rounding,
           }
         },
       },
@@ -94,12 +95,11 @@ export const Calculation = Node.create<CalculationsOptions>({
       title: {
         default: null,
         renderHTML: attributes => {
-          if (!this.options.hasTitleAttribute || !attributes[pmAttr]) {
+          if (!this.options.hasTitleAttribute || !attributes.formula) {
             return {}
           }
-
           return {
-            'title': attributes[pmAttr],
+            'title': attributes.formula,
           }
         },
       },
@@ -109,15 +109,18 @@ export const Calculation = Node.create<CalculationsOptions>({
   parseHTML() {
     return [
       {
-        tag: `${tag}[${elAttr}]`,
+        tag: 'output[data-formula]',
       },
     ]
   },
 
   renderHTML({ HTMLAttributes }) {
+    const calculationAttributes = this.options.rounding
+      ? { 'data-formula': this.options.formula, 'data-rounding': this.options.rounding }
+      : { 'data-formula': this.options.formula }
     return [
       'output',
-      mergeAttributes({ [elAttr]: this.options.formula }, this.options.HTMLAttributes, HTMLAttributes),
+      mergeAttributes(calculationAttributes, this.options.HTMLAttributes, HTMLAttributes),
       this.options.displayText,
     ]
   },
@@ -140,16 +143,16 @@ export const Calculation = Node.create<CalculationsOptions>({
           return returnBool
         },
       removeCalculation:
-        () => ({ commands }) => deleteAtom(commands) 
+        () => ({ commands }) => deleteAtom(this.name, commands.command) 
     }
   },
 
   addKeyboardShortcuts() {
     const returnVar: { [key: string]: () => boolean } = {
-      Backspace: () => deleteAtom(this.editor.commands),
+      Backspace: () => deleteAtom(this.name, this.editor.commands.command),
     }
     if (this.options.onClick) {
-      returnVar[this.options.keyboardShortcut] = () => this.options.onClick!('')
+      returnVar[this.options.keyboardShortcut] = () => this.options.onClick!({},{})
     }
     return returnVar
   },
@@ -159,35 +162,10 @@ export const Calculation = Node.create<CalculationsOptions>({
     if (this.options.onClick) {
       pmPlugins.push(ClickNodeHandler({
         type: this.type,
-        tag,
-        PMAttrName: pmAttr,
-        HTMLAttrName: elAttr,
+        querySelector: 'output[data-formula]',
         onClick: this.options.onClick
       }))
     }
     return pmPlugins
   },
 })
-
-function deleteAtom(commands: SingleCommands) {
-  return commands.command(({ tr, state }) => {
-    let isCalc = false
-    const { selection } = state
-    const { empty, anchor } = selection
-    // debugger;
-    if (!empty) {
-      return false
-    }
-
-    state.doc.nodesBetween(anchor - 1, anchor, (node, pos) => {
-      if (node.type.name === thisNodeName) {
-        isCalc = true
-        tr.insertText('', pos, pos + node.nodeSize)
-
-        return false
-      }
-    })
-
-    return isCalc
-  })
-}

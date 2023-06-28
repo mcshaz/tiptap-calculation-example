@@ -1,28 +1,39 @@
 <script setup lang="ts">
 import { watch, onMounted, onBeforeUnmount, ref } from 'vue'
-import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
+import TTBold from '@tiptap/extension-bold'
+import TTParagraph from '@tiptap/extension-paragraph'
+import TTDoc from '@tiptap/extension-document'
+import TTText from '@tiptap/extension-text'
+
+// import Bold from '@tiptap/extension-bold'
 import { Calculation } from '../tiptap/Calculation'
+import Formula from './Formula.vue'
 
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string]}>();
-const editor = ref<Editor | null>(null);
+const editor = ref<Editor>();
+const dialog = ref(false)
+const activeFormulaDetails = ref({ formula: '', rounding: ''})
 
-const getFormula = (existingFormula = '') => {
-  const formula = window.prompt('Formula', existingFormula)
-  if (formula === null || formula === existingFormula) {
-    return false
-  }
+const getFormula = (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) => {
+  // bit of a hack - by not creating a new object, we won't trigger watchers
+  activeFormulaDetails.value.formula = pmAttrs.formula as string || elDataset.formula || '',
+  activeFormulaDetails.value.rounding = pmAttrs.rounding as string || elDataset.rounding || ''
+  dialog.value = true
+  return true
+}
+
+watch(activeFormulaDetails, (newFormula, oldFormula) => {
   let chain = editor.value!.chain()
   // formula empty or pre-existing [calculations are an atom/unmutable] - delete 
-  if (formula === '' || existingFormula) {
+  if (oldFormula.formula !== '') {
     chain = chain.removeCalculation()
   }
-  if (formula !== '') {
-    chain = chain.insertCalculation({formula})
-  }
-  return chain.run()
-}
+  chain.insertCalculation({...newFormula})
+    .run()
+  dialog.value = false
+})
 
 watch(() => props.modelValue, value => {
   if (editor.value) {
@@ -40,7 +51,10 @@ watch(() => props.modelValue, value => {
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
-      StarterKit,
+      TTDoc,
+      TTParagraph,
+      TTText,
+      TTBold,
       Calculation.configure({
         onClick: getFormula,
         HTMLAttributes: {
@@ -63,7 +77,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   editor.value?.destroy()
 })
-
+// .toggleBold()
 </script>
 
 <template>
@@ -73,13 +87,21 @@ onBeforeUnmount(() => {
         B
       </strong>
     </button>
-    <button @click="getFormula()" title="insert calculation (or press Control+Shift+{ keys in editor)">
+    <button @click="getFormula({}, {})" title="insert calculation (or press Control+Shift+{ keys in editor)">
       <i class="inline-calculation">
         f(x)
       </i>
     </button>
 
     <EditorContent :editor="editor" />
+
+    <v-dialog
+      v-model="dialog"
+      width="500"
+      persistent
+    >
+    <Formula v-model="activeFormulaDetails" @cancel="dialog=false" />
+    </v-dialog>
   </div> 
 </template>
 
