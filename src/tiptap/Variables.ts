@@ -1,7 +1,17 @@
 import { allowedFormulaChars, anthropometryVars } from './../helpers/anthropometryVars'
 import { AtomSpan } from './AtomSpan'
+import { deleteAtom } from './helpers/deleteAtom'
 import { disallowedInputRule } from './helpers/disallowedInput'
 import { InputRule } from '@tiptap/vue-3'
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    atomSpan: {
+      insertVariable: (attributes: { varName: string }) => ReturnType;
+      removeVariable: () => ReturnType;
+    }
+  }
+}
 
 export const ExpandVarLetters = AtomSpan.extend({
   addInputRules() {
@@ -24,7 +34,6 @@ export const ExpandVarLetters = AtomSpan.extend({
               text: details.key,
               title: details.description,
             })
-            tr.insertText(' ', range.from - 1, range.to)
             tr.insert(range.to, newNode)
             window.getSelection()?.collapseToEnd()
           }
@@ -34,6 +43,34 @@ export const ExpandVarLetters = AtomSpan.extend({
         find: new RegExp(`[^${allowedKeys + allowedFormulaChars}]$`, 'i'),
       })
     ]
+  },
+
+  addCommands() {
+    return {
+      insertVariable:
+        attributes => ({ chain }) => {
+          const varDetails = anthropometryVars[attributes.varName]
+          var returnBool = chain()
+            .focus()
+            .insertContent(
+              {
+                type: this.name,
+                attrs: {
+                  className: 'variable',
+                  display: varDetails.name,
+                  text: attributes.varName,
+                  title: varDetails.description,
+                },
+              }
+            )
+            .run()
+
+          window.getSelection()?.collapseToEnd()
+          return returnBool
+        },
+      removeVariable:
+        () => ({ commands }) => deleteAtom(this.name, commands.command) 
+    }
   }
 })
 

@@ -25,12 +25,13 @@ const getFormula = (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) =
 }
 
 watch(activeFormulaDetails, (newFormula, oldFormula) => {
+  // todo check if shallow clone of newFormula required
   let chain = editor.value!.chain()
   // formula empty or pre-existing [calculations are an atom/unmutable] - delete 
   if (oldFormula.formula !== '') {
     chain = chain.removeCalculation()
   }
-  chain.insertCalculation({...newFormula})
+  chain.insertCalculation(newFormula)
     .run()
   dialog.value = false
 })

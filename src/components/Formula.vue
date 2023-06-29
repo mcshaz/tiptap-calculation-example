@@ -1,11 +1,7 @@
 <script lang="ts" setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref } from 'vue'
 import { roundingMethods, precisionArguments } from './../helpers/rounding'
-import { Editor, EditorContent } from '@tiptap/vue-3'
-import { ExpandVarLetters, encodeText } from './../tiptap/Variables'
-import TTParagraph from '@tiptap/extension-paragraph'
-import TTDoc from '@tiptap/extension-document'
-import TTText from '@tiptap/extension-text'
+import Expression from './Expression.vue'
 
 type FormulaRounding =  { formula: string, rounding: string }
   const props = defineProps<{ modelValue: FormulaRounding }>()
@@ -14,6 +10,7 @@ type FormulaRounding =  { formula: string, rounding: string }
     (e:'cancel'): void
   }>()
 
+  const formula = ref(props.modelValue.formula)
   const roundingKey = ref(props.modelValue.rounding
     ? props.modelValue.rounding[0]
     : '')
@@ -21,7 +18,6 @@ type FormulaRounding =  { formula: string, rounding: string }
     ? Number(props.modelValue.rounding.substring(1)) 
     : '')
   const isValid = ref<null | boolean>(null)
-  const editor = ref<Editor>();
 
   const roundingOptions = Object.entries(roundingMethods).map(([value, rm]) => ({
     value,
@@ -53,25 +49,6 @@ type FormulaRounding =  { formula: string, rounding: string }
       || (p !== '' &&  p <= integerPrecisionMax)
       || `Value must be ${integerPrecisionMax} or less`
   ])
-  console.log(encodeText(props.modelValue.formula))
-  onMounted(() => {
-    editor.value = new Editor({
-      extensions: [
-        TTDoc,
-        TTParagraph,
-        TTText,
-        ExpandVarLetters,
-      ],
-      content: {
-        type: 'doc',
-        content: [ encodeText(props.modelValue.formula) ],
-      },
-    })
-  })
-  
-  onBeforeUnmount(() => {
-    editor.value?.destroy()
-  })
 
   const submit = () => {
     if (isValid.value) {
@@ -79,9 +56,8 @@ type FormulaRounding =  { formula: string, rounding: string }
       if (requiresPrecision.value) {
         rounding += roundingPrecision.value
       }
-      debugger
       emit('update:modelValue', {
-          formula: editor.value!.getText(), 
+          formula: formula.value,
           rounding
       })
     }
@@ -98,14 +74,7 @@ type FormulaRounding =  { formula: string, rounding: string }
     >
       <v-card-title class="py-5 font-weight-black">Edit Formula</v-card-title>
       <v-card-text>
-        <EditorContent :editor="editor" />
-        <!--
-        <v-text-field
-          v-model="editableFormula"
-          :rules="formulaRules"
-          label="Calculation"
-          ref="el"
-        ></v-text-field> -->
+        <Expression v-model="formula"/>
 
         <v-select label="Rounding method" 
           v-model="roundingKey" 
@@ -128,7 +97,6 @@ type FormulaRounding =  { formula: string, rounding: string }
         ></v-text-field>
       </v-card-text>
       <v-card-actions>
-        <v-spacer></v-spacer>
         <v-btn
           color="blue-darken-1"
           variant="text"
@@ -147,18 +115,3 @@ type FormulaRounding =  { formula: string, rounding: string }
     </v-card>
   </v-form>
 </template>
-
-<style>
-.variable {
-  padding: .2em .4em;
-  margin: 0;
-  font-size: 85%;
-  font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
-  white-space: break-spaces;
-  background-color: rgba(175, 184, 193, 0.2);
-  border-radius: 6px;
-  display: inline-block;
-  box-sizing: border-box;
-  color: rgb(31, 35, 40)
-}
-</style>

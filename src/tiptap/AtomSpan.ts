@@ -84,18 +84,34 @@ export const AtomSpan = Node.create<AtomSpanOptions>({
     }
   },
   /*
+  declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    atomSpan: {
+      insertAtomSpan: (attributes: AtomSpanOptions) => ReturnType;
+      removeAtomSpan: () => ReturnType;
+    }
+  }
+}
+
   addCommands() {
     return {
-      removeEmptyTextClass: () => ({ state, commands }) => {
-        const attributes = getMarkAttributes(state, this.type)
-        const hasStyles = Object.entries(attributes).some(([, value]) => !!value)
+      insertAtomSpan:
+        attributes => ({ chain }) => {
+          var returnBool = chain()
+            .focus()
+            .insertContent(
+              {
+                type: this.name,
+                attrs: attributes,
+              }
+            )
+            .run()
 
-        if (hasStyles) {
-          return true
-        }
-
-        return commands.unsetMark(this.name)
-      },
+          window.getSelection()?.collapseToEnd()
+          return returnBool
+        },
+      removeAtomSpan:
+        () => ({ commands }) => deleteAtom(this.name, commands.command) 
     }
   },
   */
