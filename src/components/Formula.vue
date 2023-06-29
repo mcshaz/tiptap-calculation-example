@@ -75,7 +75,7 @@ type FormulaRounding =  { formula: string, rounding: string }
       <v-card-title class="py-5 font-weight-black">Edit Formula</v-card-title>
       <v-card-text>
         <Expression v-model="formula"/>
-
+        <v-divider />
         <v-select label="Rounding method" 
           v-model="roundingKey" 
           :items="roundingOptions"

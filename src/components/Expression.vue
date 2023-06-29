@@ -67,20 +67,15 @@ import { getNextNumber } from '../sharedState/numberGenerator';
         </v-label>
       </v-toolbar-title>
 
-      <v-btn v-for="(v, k) in nonAgeVars" :key="k" :title="v.description" icon @click="insertVariable(k as string)">
-        <v-icon :icon="v.icon"/>
-      </v-btn>
+      <v-btn v-for="(v, k) in nonAgeVars" :key="k" :title="v.description" @click="insertVariable(k as string)" :icon="v.icon"/>
       <v-menu >
         <template v-slot:activator="{ props }">
           <v-btn
             color="primary"
             dark
             v-bind="props"
-            icon
             title="age variables…"
-          >
-            <v-icon icon="mdi-cake-variant"/>
-          </v-btn>
+            icon="mdi-cake-variant"/>
         </template>
 
         <v-list>

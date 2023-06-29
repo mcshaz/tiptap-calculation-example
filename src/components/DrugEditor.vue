@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { watch, onMounted, onBeforeUnmount, ref } from 'vue'
 import { Editor, EditorContent } from '@tiptap/vue-3'
+import Palette from './Palette.vue'
+import TTTStyle from '@tiptap/extension-text-style'
 import TTBold from '@tiptap/extension-bold'
 import TTParagraph from '@tiptap/extension-paragraph'
 import TTDoc from '@tiptap/extension-document'
 import TTText from '@tiptap/extension-text'
+import TTIt from '@tiptap/extension-italic'
+import TTHigh from '@tiptap/extension-highlight'
+import TTHx from '@tiptap/extension-history'
+import TTSub from '@tiptap/extension-subscript'
+import TTSuper from '@tiptap/extension-superscript'
+import TTLink from '@tiptap/extension-link'
+import TTColor from '@tiptap/extension-color'
 
 // import Bold from '@tiptap/extension-bold'
 import { Calculation } from '../tiptap/Calculation'
@@ -15,6 +24,8 @@ const emit = defineEmits<{ 'update:modelValue': [value: string]}>();
 const editor = ref<Editor>();
 const dialog = ref(false)
 const activeFormulaDetails = ref({ formula: '', rounding: ''})
+const activeColour = ref('rgb(183, 28, 28)')
+const activeBackground = ref('rgb(255, 235, 59)')
 
 const getFormula = (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) => {
   // bit of a hack - by not creating a new object, we won't trigger watchers
@@ -55,7 +66,15 @@ onMounted(() => {
       TTDoc,
       TTParagraph,
       TTText,
+      TTTStyle,
       TTBold,
+      TTIt,
+      TTHigh.configure({ multicolor: true }),
+      TTHx,
+      TTSub,
+      TTSuper,
+      TTLink,
+      TTColor,
       Calculation.configure({
         onClick: getFormula,
         HTMLAttributes: {
@@ -78,22 +97,53 @@ onMounted(() => {
 onBeforeUnmount(() => {
   editor.value?.destroy()
 })
+
+const toggleHighlight = () => {
+  editor.value!.chain().focus().toggleHighlight({ color: activeBackground.value }).run()
+}
+
+const setColour = () => {
+  editor.value!.chain().focus().setColor(activeColour.value).run()
+}
+
 // .toggleBold()
 </script>
 
 <template>
   <div class="tt-editor">
-    <button @click="editor!.chain().focus().toggleBold().run()">
-      <strong>
-        B
-      </strong>
-    </button>
-    <button @click="getFormula({}, {})" title="insert calculation (or press Control+Shift+{ keys in editor)">
-      <i class="inline-calculation">
-        f(x)
-      </i>
-    </button>
+    <div class="d-flex justify-space-between pb-0">
+      <v-btn-toggle
+        multiple
+        divided
+      >
+        <v-btn @click="editor!.chain().focus().toggleItalic().run()" title="italic">
+          <v-icon icon="mdi-format-italic" />
+        </v-btn>
+        <v-btn @click="editor!.chain().focus().toggleBold().run()" title="bold">
+          <v-icon icon="mdi-format-bold" />
+        </v-btn>
+        <v-btn @click="editor!.chain().focus().toggleSuperscript().run()" title="superscript">
+          <v-icon icon="mdi-format-superscript" />
+        </v-btn>
+        <v-btn @click="editor!.chain().focus().toggleSubscript().run()" title="subscript">
+          <v-icon icon="mdi-format-subscript" />
+        </v-btn>
+        <Palette v-model="activeColour" @click="setColour"/>
+        <Palette v-model="activeBackground" @click="toggleHighlight" isHighlight/>
 
+
+        <v-btn @click="editor!.chain().focus().undo().run()" title="undo">
+          <v-icon icon="mdi-undo" />
+        </v-btn>
+        <v-btn @click="editor!.chain().focus().redo().run()" title="redo">
+          <v-icon icon="mdi-redo" />
+        </v-btn>
+
+        <v-btn @click="getFormula({}, {})" title="insert calculation (or press Control+Shift+{ keys in editor)">
+          <v-icon icon="mdi-function-variant" />
+        </v-btn>
+      </v-btn-toggle>
+    </div>
     <EditorContent :editor="editor" />
 
     <v-dialog
