@@ -20,12 +20,16 @@ import { Calculation } from '../tiptap/Calculation'
 import Formula from './Formula.vue'
 
 const props = defineProps<{ modelValue: string }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string]}>();
+// const emit = defineEmits<{ 'update:modelValue': [value: string]}>();
 const editor = ref<Editor>();
 const dialog = ref(false)
+const selectedButtons = ref<number[]>([])
 const activeFormulaDetails = ref({ formula: '', rounding: ''})
-const activeColour = ref('rgb(183, 28, 28)')
-const activeBackground = ref('rgb(255, 235, 59)')
+
+const colourTo = ref('rgb(183, 28, 28)')
+const highlightTo = ref('rgb(255, 235, 59)')
+const colourStyle = ref<string | null>(null)
+const highlightStyle = ref<string | null>(null)
 
 const getFormula = (pmAttrs: Record<string, unknown>, elDataset: DOMStringMap) => {
   // bit of a hack - by not creating a new object, we won't trigger watchers
@@ -47,18 +51,29 @@ watch(activeFormulaDetails, (newFormula, oldFormula) => {
   dialog.value = false
 })
 
-watch(() => props.modelValue, value => {
-  if (editor.value) {
-    // HTML
-    const isSame = editor.value.getHTML() === value
-    // JSON
-    // const isSame = JSON.stringify(editor.value.getJSON()) === JSON.stringify(value)
-    if (isSame) {
-      return
-    }
-    editor.value.commands.setContent(value, false)
+const updateSelectedButtons = () => {
+  const active = 
+    ['italic', 'bold', 'superscript', 'subscript', 'textStyle', null, 'highlight'].reduce(
+      (accum, cur, indx) => cur && editor.value!.isActive(cur) 
+        ? accum.concat(indx)
+        : accum
+      , [] as number[])
+  if (active.includes(4)) {
+    colourStyle.value = editor.value!.getAttributes('textStyle').color
+    if (colourStyle.value === colourTo.value) { active.push(5) }
+  } else {
+    colourStyle.value = null
   }
-}),
+
+  if (active.includes(6)) {
+    highlightStyle.value =  editor.value!.getAttributes('highlight').color
+    if (highlightStyle.value === highlightTo.value) { active.push(7) }
+  } else {
+    highlightStyle.value = null
+  }
+
+  selectedButtons.value = active
+}
 
 onMounted(() => {
   editor.value = new Editor({
@@ -84,6 +99,7 @@ onMounted(() => {
     ],
     content: props.modelValue,
     // props.modelValue,
+    /*
     onUpdate: ({ editor }) => {
       // HTML
       emit('update:modelValue', editor.getHTML())
@@ -91,6 +107,8 @@ onMounted(() => {
       // JSON
       // emit('update:modelValue', editor.getJSON())
     },
+    */
+    onSelectionUpdate: updateSelectedButtons
   })
 }),
 
@@ -99,11 +117,11 @@ onBeforeUnmount(() => {
 })
 
 const toggleHighlight = () => {
-  editor.value!.chain().focus().toggleHighlight({ color: activeBackground.value }).run()
+  editor.value!.chain().focus().toggleHighlight({ color: highlightTo.value }).run()
 }
 
 const setColour = () => {
-  editor.value!.chain().focus().setColor(activeColour.value).run()
+  editor.value!.chain().focus().setColor(colourTo.value).run()
 }
 
 // .toggleBold()
@@ -115,6 +133,7 @@ const setColour = () => {
       <v-btn-toggle
         multiple
         divided
+        :modelValue="selectedButtons"
       >
         <v-btn @click="editor!.chain().focus().toggleItalic().run()" title="italic">
           <v-icon icon="mdi-format-italic" />
@@ -128,9 +147,13 @@ const setColour = () => {
         <v-btn @click="editor!.chain().focus().toggleSubscript().run()" title="subscript">
           <v-icon icon="mdi-format-subscript" />
         </v-btn>
-        <Palette v-model="activeColour" @click="setColour"/>
-        <Palette v-model="activeBackground" @click="toggleHighlight" isHighlight/>
 
+        <Palette v-model="colourTo" :currentStyle="colourStyle" @click="setColour">
+          <v-icon icon="mdi-format-color-text" />
+        </Palette>
+        <Palette v-model="highlightTo" :currentStyle="highlightStyle" @click="toggleHighlight">
+          <v-icon icon="mdi-format-color-highlight" />
+        </Palette>
 
         <v-btn @click="editor!.chain().focus().undo().run()" title="undo">
           <v-icon icon="mdi-undo" />

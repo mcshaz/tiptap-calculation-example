@@ -1,23 +1,24 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
+
+// import { computed } from 'vue';
 // import type { HexColor } from './../helpers/invertColours' 
 // import invert from './../helpers/invertColours' 
   const props = defineProps<{ 
     modelValue: string,
+    currentStyle?: string | null,
     dark?: boolean,
-    isHighlight?: boolean
   }>()
 
   const emit = defineEmits<{
     (e: 'update:modelValue', color: string): void
-    (e: 'click') : void
+    (e: 'click'): void
   }>()
 
-  const icon = props.isHighlight ? 'mdi-format-color-highlight' : 'mdi-format-color-text'
-  const style = computed(() => props.isHighlight ? { backgroundColor: props.modelValue } : { color: props.modelValue })
+  const iconColour = computed(() => props.currentStyle || '#000')
 
-  function clickAndEmit(c: string) {
-    emit('update:modelValue', c)
+  const updateAndClick = (colour: unknown) => {
+    emit('update:modelValue', colour as string)
     emit('click')
   }
   /*
@@ -36,46 +37,48 @@ import { computed } from 'vue';
 </script>
 
 <template>
+  <v-btn title="text colour" class="split-btn-l" @click="emit('click')">
+    <div class="d-flex align-center flex-column justify-center">
+      <slot></slot>
+      <v-sheet
+        tile
+        height="4"
+        width="26"
+        :color="modelValue"
+      ></v-sheet>
+    </div>
+  </v-btn>
   <v-menu
     offset-y
     :dark="dark"
   >
     <template #activator="{ props }">
-      <div class="v-btn">
-        <button
-          :style="style"
-          class="left-btn"
-          @click="emit('click')"
+        <v-btn
+          v-bind="props"
+          class="split-btn-r"
         >
-          <v-icon :icon="icon"/>
-        </button>
-        <button
-          @click="props.onClick"
-          class="right-btn"
-        >
-          <v-icon icon="mdi-chevron-down" />
-        </button>
-      </div>
+          <v-icon icon="mdi-menu-down" :color="iconColour" />
+        </v-btn>
     </template>
     <v-color-picker 
       hide-canvas 
       hide-inputs 
       hide-sliders 
       show-swatches 
-      mode="hex" 
       :model-value="modelValue" 
-      @update:model-value="clickAndEmit"
-    />
+      @update:model-value="updateAndClick">
+    </v-color-picker>
   </v-menu>
 </template>
 
 <style>
-button.left-btn {
-  padding: 0 7px 0 7px
+button.split-btn-l {
+  padding: 0 3px 0 10px;
+  min-width: 32px;
+  border-inline-end-color: #f3f3f3 !important
 }
-button.right-btn {
-	padding: 0 3px 0 3px;
-	border-left: 1px solid rgba(0, 0, 0, 0.12);
-	border-radius: unset;
+button.split-btn-r {
+	padding: 0 7px 0 3px;
+  min-width: 12px;
 }
 </style>
